@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔥 God-Level Prediction Tool</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #000, #111);
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .box {
+      max-width: 550px;
+      margin: auto;
+      background: #1a1a1a;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 0 30px #0f0, 0 0 10px #ff0 inset;
+    }
+    h2 {
+      text-align: center;
+      background: linear-gradient(to right, #ffce00, #ff3c00);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    .label { font-weight: bold; margin-top: 10px; color: #aaa; }
+    .result {
+      font-size: 22px;
+      margin: 10px 0;
+      text-align: center;
+      color: #fff;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+    .history-card {
+      background: #222;
+      margin: 8px 0;
+      padding: 12px;
+      border-left: 5px solid;
+      border-radius: 8px;
+      animation: fadein 0.4s ease;
+    }
+    .WIN { border-color: #00ff88; }
+    .LOSS { border-color: #ff3b3b; }
+    .PENDING { border-color: #ffe600; }
+    .logic-comment {
+      font-size: 13px;
+      color: #ccc;
+      margin-top: 4px;
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>🔥 1-Min AI Prediction Tool</h2>
+  <div class="label">Current Period:</div>
+  <div class="result" id="periodDisplay">-</div>
+
+  <div class="label">Prediction:</div>
+  <div class="result" id="predictionDisplay">-</div>
+
+  <div class="label">Pattern:</div>
+  <div class="result" id="patternName">-</div>
+
+  <div class="label">Logic Used:</div>
+  <div class="result" id="logicExplanation">-</div>
+
+  <div class="stat"><span>✅ Wins:</span><span id="wins">0</span></div>
+  <div class="stat"><span>❌ Losses:</span><span id="losses">0</span></div>
+  <div class="stat"><span>🎯 Accuracy:</span><span id="accuracy">0%</span></div>
+
+  <div class="label">📜 Prediction History:</div>
+  <div id="historyContainer"></div>
+</div>
+
+<script>
+let patternIndex = 0;
+let wins = 0;
+let losses = 0;
+let lastPeriod = null;
+const historyData = [];
+const fibonacciCache = [0, 1];
+
+function generatePeriod() {
+  let now = new Date();
+  return now.getFullYear() * 100000 + 10001 + now.getUTCHours() * 60 + now.getUTCMinutes();
+}
+
+function isPrime(num) {
+  if (num < 2) return false;
+  for (let i = 2; i <= Math.sqrt(num); i++) if (num % i === 0) return false;
+  return true;
+}
+
+function isFibonacci(n) {
+  while (fibonacciCache[fibonacciCache.length - 1] < n) {
+    const len = fibonacciCache.length;
+    fibonacciCache.push(fibonacciCache[len - 1] + fibonacciCache[len - 2]);
+  }
+  return fibonacciCache.includes(n);
+}
+
+const predictionPatterns = [
+  {
+    name: "AI Adaptive Parity",
+    logic: (p) => {
+      let digits = String(p).split('').map(Number);
+      let parity = digits.reduce((a, b) => a + b, 0) % 2;
+      return parity === 0 ? "BIGG" : "SMLL";
+    },
+    explain: (p) => `Sum of digits → ${String(p).split('').reduce((a,b)=>+a + +b, 0)} → ${String(p).split('').reduce((a,b)=>+a + +b, 0) % 2 === 0 ? "even → BIGG" : "odd → SMLL"}`
+  },
+  {
+    name: "Prime Check",
+    logic: (p) => {
+      const n = parseInt(p.toString().slice(-2));
+      return isPrime(n) ? "BIGG" : "SMLL";
+    },
+    explain: (p) => {
+      const n = parseInt(p.toString().slice(-2));
+      return `Last 2 digits ${n} → ${isPrime(n) ? "Prime → BIGG" : "Not Prime → SMLL"}`;
+    }
+  },
+  {
+    name: "Volatility Check",
+    logic: (p) => {
+      let digits = p.toString().split('').map(Number);
+      let diff = Math.abs(digits[0] - digits[digits.length - 1]);
+      return diff >= 5 ? "BIGG" : "SMLL";
+    },
+    explain: (p) => {
+      const digits = p.toString().split('').map(Number);
+      let diff = Math.abs(digits[0] - digits[digits.length - 1]);
+      return `Volatility |${digits[0]} - ${digits[digits.length - 1]}| = ${diff} → ${diff >= 5 ? "BIGG" : "SMLL"}`;
+    }
+  },
+  {
+    name: "Streak Response",
+    logic: () => {
+      let last = historyData.slice(0, 3).map(h => h.prediction);
+      let isSame = last.length === 3 && last.every(val => val === last[0]);
+      return isSame && last[0] === "BIGG" ? "SMLL" : "BIGG";
+    },
+    explain: () => `Last 3 same? Flip → Response`
+  },
+  {
+    name: "Weighted Smart Flip",
+    logic: () => {
+      const lossesInLast5 = historyData.slice(0, 5).filter(h => h.status === "LOSS").length;
+      return lossesInLast5 >= 3 ? "SMLL" : "BIGG";
+    },
+    explain: () => `Losses ≥3 in last 5? → SMLL else BIGG`
+  },
+  {
+    name: "Fibonacci Flip",
+    logic: (p) => {
+      const lastDigit = parseInt(p.toString().slice(-1));
+      return isFibonacci(lastDigit) ? "BIGG" : "SMLL";
+    },
+    explain: (p) => {
+      const n = parseInt(p.toString().slice(-1));
+      return `Last digit ${n} is ${isFibonacci(n) ? "Fibonacci → BIGG" : "not → SMLL"}`;
+    }
+  },
+  {
+    name: "Pattern Memory Match",
+    logic: () => {
+      const trend = historyData.slice(0, 3).map(h => h.prediction);
+      if (trend.length < 3) return "BIGG";
+      return trend[0] === trend[2] ? trend[1] : trend[0];
+    },
+    explain: () => `Pattern recall from recent trend`
+  }
+];
+
+function getPrediction(period) {
+  const pattern = predictionPatterns[patternIndex];
+  const prediction = pattern.logic(period);
+  const explanation = pattern.explain(period);
+  return { prediction, explanation, patternName: pattern.name };
+}
+
+function rotatePattern(success) {
+  if (success) {
+    patternIndex = (patternIndex + 1) % predictionPatterns.length;
+  } else {
+    patternIndex = (patternIndex + 2 + Math.floor(Math.random() * 2)) % predictionPatterns.length;
+  }
+}
+
+async function fetchResultFromAPI() {
+  try {
+    const res = await fetch("https://api.bdg88zf.com/api/webapi/GetNoaverageEmerdList", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageSize: 10, pageNo: 1, typeId: 1, language: 0,
+        random: "4a0522c6ecd8410496260e686be2a57c",
+        signature: "334B5E70A0C9B8918B0B15E517E2069C",
+        timestamp: Math.floor(Date.now() / 1000)
+      })
+    });
+    const json = await res.json();
+    return json?.data?.list?.[0] || null;
+  } catch (e) {
+    console.error("API Error:", e);
+    return null;
+  }
+}
+
+function updateHistoryDisplay() {
+  const container = document.getElementById("historyContainer");
+  container.innerHTML = "";
+  historyData.forEach(h => {
+    const card = document.createElement("div");
+    card.className = `history-card ${h.status}`;
+    card.innerHTML = `
+      <b>P:</b> ${h.period} |
+      <b>Pred:</b> ${h.prediction} |
+      <b>Result:</b> ${h.result} ${h.status === "WIN" ? "✅" : h.status === "LOSS" ? "❌" : ""}
+      <div class="logic-comment">🧠 ${h.explanation}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function updateStats() {
+  const total = wins + losses;
+  const accuracy = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+  document.getElementById("wins").innerText = wins;
+  document.getElementById("losses").innerText = losses;
+  document.getElementById("accuracy").innerText = `${accuracy}%`;
+}
+
+async function mainLoop() {
+  const actualResult = await fetchResultFromAPI();
+  if (!actualResult || actualResult.issueNumber === lastPeriod) return;
+
+  const actualNum = parseInt(actualResult.number);
+  const actualResultType = actualNum < 5 ? "SMLL" : "BIGG";
+  const currentPeriod = generatePeriod();
+  lastPeriod = actualResult.issueNumber;
+
+  if (historyData[0] && historyData[0].status === "PENDING") {
+    const correct = historyData[0].prediction === actualResultType;
+    historyData[0].result = actualNum;
+    historyData[0].status = correct ? "WIN" : "LOSS";
+    if (correct) {
+      wins++;
+      rotatePattern(true);
+    } else {
+      losses++;
+      rotatePattern(false);
+    }
+    updateStats();
+    updateHistoryDisplay();
+  }
+
+  const { prediction, explanation, patternName } = getPrediction(currentPeriod);
+  document.getElementById("periodDisplay").innerText = currentPeriod;
+  document.getElementById("predictionDisplay").innerText = prediction;
+  document.getElementById("logicExplanation").innerText = explanation;
+  document.getElementById("patternName").innerText = patternName;
+
+  historyData.unshift({
+    period: currentPeriod,
+    prediction,
+    result: "-",
+    explanation,
+    status: "PENDING"
+  });
+}
+
+setInterval(mainLoop, 5000);
+</script>
+</body>
+</html>
