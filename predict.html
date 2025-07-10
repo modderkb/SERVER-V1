@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Reseller Panel | God Mode 🔥</title>
+  <title>Reseller Key Management | God Mode 🔥</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -32,7 +32,7 @@
       border-radius: 12px;
       backdrop-filter: blur(8px);
       box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
-      max-width: 600px;
+      max-width: 800px;
       width: 100%;
       text-align: center;
     }
@@ -56,7 +56,8 @@
       50% { border-color: transparent; }
     }
 
-    .login-container input, .login-container button {
+    /* Key Expiry Dropdown and Input Styling */
+    select, input[type="password"], .generate-key-btn {
       padding: 15px;
       margin: 10px;
       font-size: 18px;
@@ -69,11 +70,12 @@
       transition: 0.3s;
     }
 
-    .login-container input:focus, .login-container button:hover {
+    select:focus, input:focus, .generate-key-btn:hover {
       transform: scale(1.05);
       box-shadow: 0 0 20px #00b3b3;
     }
 
+    /* Key Management Table */
     .key-management-panel {
       display: none;
       margin-top: 20px;
@@ -128,18 +130,18 @@
 
     .telegram-btn {
       background: #0088cc;
-      padding: 12px 25px;
+      padding: 0px 0px;
       color: white;
-      border-radius: 8px;
+      border-radius:0ppx;
       text-decoration: none;
       font-weight: bold;
-      box-shadow: 0 0 15px #00b3b3;
-      transition: 0.3s;
+      box-shadow: 0 px #00b3b3;
+      transition: 0os;
     }
 
     .telegram-btn:hover {
       background: #00aaff;
-      box-shadow: 0 0 25px #00f0f0;
+      box-shadow: 0 0 px #00f0f0;
     }
 
     /* Loading Spinner */
@@ -163,21 +165,44 @@
       color: red;
       margin-top: 10px;
     }
+
+    .search-bar {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="login-container">
-      <h1>RESELLER LOGIN 🔐</h1>
-      <input type="password" id="keyInput" placeholder="Enter Reseller Key" />
-      <button onclick="checkResellerKey()">Enter</button>
-      <div class="spinner" id="spinner"></div>
-      <div class="error" id="errorMsg"></div>
-      <a href="https://t.me/desibillal1" target="_blank" class="telegram-btn">💬 Contact Telegram</a><br>
-    </div>
-
+    <h1>KBX KEY MANAGMENT</h1>
+    
+    <!-- Reseller Key Generation Form -->
+    <select id="expirationTime">
+      <option value="30">30 Minutes</option>
+      <option value="1440">1 Day</option>
+      <option value="4320">3 Days</option>
+      <option value="10080">7 Days</option>
+      <option value="21600">15 Days</option>
+      <option value="43200">30 Days</option>
+      <option value="0">Never Expire</option>
+    </select>
+    
+    <input type="password" id="keyInput" placeholder="Enter Reseller Key" />
+    <button class="generate-key-btn" onclick="generateKey()">Generate New Key</button>
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="errorMsg"></div>
+    <input type="text" class="search-bar" id="searchBar" placeholder="Search by Key..." oninput="filterKeys()">
+    
+    <!-- Key Management Panel -->
     <div class="key-management-panel" id="keyManagementPanel">
-      <h2>Reseller Key Management</h2>
+      <h2>Key Management</h2>
       <table>
         <thead>
           <tr>
@@ -188,10 +213,9 @@
           </tr>
         </thead>
         <tbody id="keyList">
-          <!-- Key entries will be populated here -->
+          <!-- Keys will be populated dynamically -->
         </tbody>
       </table>
-      <button class="generate-key-btn" onclick="generateKey()">Generate New Key</button>
     </div>
 
     <div class="footer">Powered by 🔥 Firebase | VIP Access for Resellers 🛡</div>
@@ -210,43 +234,67 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function checkResellerKey() {
-      const key = document.getElementById("keyInput").value.trim();
-      const errorMsg = document.getElementById("errorMsg");
-      const spinner = document.getElementById("spinner");
-      if (!key) {
-        errorMsg.textContent = "Enter a valid reseller key!";
-        return;
-      }
-      spinner.style.display = "block";
-      errorMsg.textContent = "";
-
-      db.ref("resellers/" + key).once("value").then(snapshot => {
-        spinner.style.display = "none";
-        if (snapshot.exists()) {
-          // Redirect to your predict.html when the key is correct
-          window.location.href = "predict.html";  // <-- Replace with your target URL
-        } else {
-          errorMsg.textContent = "❌ Invalid key! Contact support.";
-        }
-      }).catch(error => {
-        spinner.style.display = "none";
-        console.error("Firebase Error:", error);
-        errorMsg.textContent = "🔥 Error verifying key!";
-      });
-    }
-
     function generateKey() {
-      const newKey = "KEY-" + Math.random().toString(36).substr(2, 9); // Simple key generator
-      db.ref("resellers/" + newKey).set({
-        expiration: new Date().toISOString(), // Set current time as expiration (this could be modified to a date logic)
-        status: "active"
+      const key = "KEY-" + Math.random().toString(36).substr(2, 9); // Simple key generator
+      const expirationOption = document.getElementById('expirationTime').value;
+      const expirationTime = expirationOption === "0" ? "Never" : new Date(new Date().getTime() + parseInt(expirationOption) * 60000).toISOString();
+
+      db.ref("resellers/" + key).set({
+        expiration: expirationTime,
+        status: "active",
+        createdAt: new Date().toISOString()
       }).then(() => {
-        alert("New key generated: " + newKey);
+        alert("New key generated: " + key);
+        updateKeyList();
       }).catch(error => {
         console.error("Error generating key:", error);
       });
     }
+
+    function updateKeyList() {
+      const keyListElement = document.getElementById('keyList');
+      db.ref('resellers').once('value').then(snapshot => {
+        keyListElement.innerHTML = ''; // Clear existing list
+        snapshot.forEach(childSnapshot => {
+          const keyData = childSnapshot.val();
+          const keyRow = document.createElement('tr');
+          keyRow.innerHTML = `
+            <td>${childSnapshot.key}</td>
+            <td>${keyData.expiration}</td>
+            <td>${keyData.status}</td>
+            <td>
+              <button onclick="expireKey('${childSnapshot.key}')">Expire</button>
+              <button onclick="deleteKey('${childSnapshot.key}')">Delete</button>
+            </td>
+          `;
+          keyListElement.appendChild(keyRow);
+        });
+      });
+    }
+
+    function expireKey(key) {
+      db.ref('resellers/' + key).update({ status: "expired" }).then(() => {
+        updateKeyList();
+      });
+    }
+
+    function deleteKey(key) {
+      db.ref('resellers/' + key).remove().then(() => {
+        updateKeyList();
+      });
+    }
+
+    function filterKeys() {
+      const searchQuery = document.getElementById('searchBar').value.toLowerCase();
+      const rows = document.getElementById('keyList').getElementsByTagName('tr');
+      Array.from(rows).forEach(row => {
+        const keyText = row.cells[0].textContent.toLowerCase();
+        row.style.display = keyText.includes(searchQuery) ? '' : 'none';
+      });
+    }
+
+    // Initial call to update the key list
+    updateKeyList();
   </script>
 </body>
 </html>
